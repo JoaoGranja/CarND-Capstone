@@ -17,6 +17,10 @@ RUN apt-get upgrade -y
 
 # install python packages
 RUN apt-get install -y python-pip
+<<<<<<< HEAD
+=======
+RUN pip install --upgrade pip
+>>>>>>> 557b3c8ba3496a7124d0297f80bd7d1e5c3812b2
 COPY requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
 
