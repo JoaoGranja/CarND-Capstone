@@ -3,6 +3,9 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy.spatial import cKDTree
+
+import numpy as np
 
 import math
 
@@ -37,17 +40,60 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-
-        rospy.spin()
-
+        self.base_waypoints = None
+        self.waypoints_2D  = None
+        self.tree = None
+        self.pose = None
+        
+        self.main_loop()
+        
+    def main_loop(self):
+        rate = rospy.Rate(50)
+        while not rospy.is_shutdown():
+            if None not in (self.pose, self.tree):
+                rospy.loginfo("Publish final waypoints")
+                self.publish_final_waypoints()
+            rate.sleep()
+            
+    def publish_final_waypoints(self):
+        closest_index = self.get_closest_index()
+        lane = Lane()
+        lane.header = self.base_waypoints.header
+        lane.waypoints = self.base_waypoints.waypoints[closest_index : closest_index + LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(lane)
+            
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg
+        rospy.loginfo("Car position callback")
+        
+    def get_closest_index(self):
+        x = self.pose.pose.position.x
+        y = self.pose.pose.position.y
+        
+        #find the closest waypoint of the current car position
+        closest_idx = self.tree.query([x,y])[1]
+        
+        #Check if this point is behind or after the current car position
+        closest_wp = np.array(self.waypoints_2D[closest_idx])
+        if closest_idx == 0:
+            ahead_closest_wp = np.array(self.waypoints_2D[closest_idx+1])
+            dot = np.dot((ahead_closest_wp - closest_wp), (closest_wp - np.array([x,y])))
+        else:
+            behind_closest_wp = np.array(self.waypoints_2D[closest_idx-1])
+            dot = np.dot((closest_wp - behind_closest_wp), (closest_wp - np.array([x,y])))
+            
+        if dot > 0:
+            closest_idx = (closest_idx + 1) % len(self.waypoints_2D)
+            
+        return closest_idx
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
-
+        self.base_waypoints = waypoints
+        #if not self.waypoints_2D:
+        self.waypoints_2D = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+        self.tree = cKDTree(self.waypoints_2D)
+        rospy.loginfo("Base waypoints callback")
+        
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
