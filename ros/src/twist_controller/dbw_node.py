@@ -54,7 +54,9 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `Controller` object
-        #self.controller = Controller(<Arguments you wish to provide>)
+        min_speed = 0.1
+        self.controller = Controller(vehicle_mass, wheel_radius, wheel_base, steer_ratio, min_speed, max_lat_accel, 
+                                     max_steer_angle, decel_limit)
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/current_velocity', TwistStamped, self.vel_cb)
@@ -71,6 +73,7 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
+        throttle = brake = steering = 0
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
@@ -82,11 +85,12 @@ class DBWNode(object):
                                                                  self.target_angular_vel,
                                                                  self.dbw_enabled )
             if self.dbw_enabled:
-               self.publish(throttle, brake, steering)
+                self.publish(throttle, brake, steering)
             rate.sleep()
             
     def vel_cb(self, msg):
-        self.cur_linear_vel = msg.twist.linear.x
+        self.cur_linear_vel = msg.twist.linear.x # only x component is considered
+        self.cur_angular_vel = msg.twist.angular.z # only z component is considered
         
     def twist_cb(self, msg):
         self.target_linear_vel = msg.twist.linear.x
