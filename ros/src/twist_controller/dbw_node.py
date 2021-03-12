@@ -33,7 +33,7 @@ that we have created in the `__init__` function.
 
 class DBWNode(object):
     def __init__(self):
-        rospy.init_node('dbw_node')
+        rospy.init_node('dbw_node', log_level=rospy.DEBUG)
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
@@ -69,23 +69,26 @@ class DBWNode(object):
         self.cur_angular_vel = None
         self.target_linear_vel = None
         self.target_angular_vel = None
+        self.throttle = self.brake = self.steering = 0
         
         self.loop()
 
     def loop(self):
-        throttle = brake = steering = 0
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            if None not in (self.cur_linear_vel, self.cur_angular_vel, self.target_linear_vel, self.target_angular_vel):
-                throttle, brake, steering = self.controller.control(self.cur_linear_vel,
+            if None not in (self.cur_linear_vel, self.target_linear_vel):
+                self.throttle, self.brake, self.steering = self.controller.control(self.cur_linear_vel,
                                                                  self.cur_angular_vel,
                                                                  self.target_linear_vel, 
                                                                  self.target_angular_vel,
                                                                  self.dbw_enabled )
+                
             if self.dbw_enabled:
-                self.publish(throttle, brake, steering)
+                rospy.logdebug("Publish throttle %f, brake %f and steering %f ", self.throttle, self.brake, self.steering)
+                #self.publish (1,0,0)
+                self.publish(self.throttle, self.brake, self.steering)
             rate.sleep()
             
     def vel_cb(self, msg):
