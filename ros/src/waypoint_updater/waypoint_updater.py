@@ -25,7 +25,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 70 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -36,11 +36,10 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        # Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # Add other member variables you need below
         self.base_waypoints = None
         self.waypoints_2D  = None
         self.tree = None
@@ -53,7 +52,7 @@ class WaypointUpdater(object):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
             if None not in (self.pose, self.tree, self.waypoints_2D ):
-                rospy.logdebug("Publish final waypoints")
+                rospy.logdebug("Waypoint Updater - Publish final waypoints")
                 self.publish_final_waypoints()
             rate.sleep()
             
@@ -61,11 +60,11 @@ class WaypointUpdater(object):
         closest_idx = self.get_closest_index()
         lane = Lane()
         lane.header = self.base_waypoints.header
-        #if (self.traffic_idx is not None) and (self.traffic_idx > closest_idx and self.traffic_idx < closest_idx + LOOKAHEAD_WPS):
-        #    lane.waypoints = self.process_traffic_waypoint(closest_idx)
-        #else:
-        #    lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
-        lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
+        if (self.traffic_idx is not None) and (self.traffic_idx > closest_idx and self.traffic_idx < closest_idx + LOOKAHEAD_WPS):
+            lane.waypoints = self.process_traffic_waypoint(closest_idx)
+        else:
+            lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
+        #lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
         
     def process_traffic_waypoint(self, closest_idx):
@@ -80,7 +79,7 @@ class WaypointUpdater(object):
             wp_vel = get_waypoint_velocity(wp)
             
             calc_vel = ((current_wp_len - idx) / current_wp_len )* wp_vel 
-            rospy.logdebug("WP index is {0} Calculated velocity is {1}, waypoint velocity is {2}", idx, calc_vel, wp_vel)
+            #rospy.logwarn("Waypoint Updater - WP index is {0} Calculated velocity is {1}, waypoint velocity is {2}", idx, calc_vel, wp_vel)
             if calc_vel < 0.1:
                 calc_vel = 0
             update_vel = min(wp_vel, calc_vel)
@@ -90,7 +89,7 @@ class WaypointUpdater(object):
             
     def pose_cb(self, msg):
         self.pose = msg
-        rospy.logdebug("Car position callback")
+        #rospy.logwarn("Waypoint Updater - Car position callback x: {} y: {}".format(self.pose.pose.position.x, self.pose.pose.position.y))
         
     def get_closest_index(self):
         x = self.pose.pose.position.x
@@ -110,17 +109,18 @@ class WaypointUpdater(object):
             
         if dot > 0:
             closest_idx = (closest_idx + 1) % len(self.waypoints_2D)
-            
+        
+        #rospy.logwarn("Waypoint Updater - Car position closest index point: {}".format(closest_idx))
         return closest_idx
 
     def waypoints_cb(self, waypoints):
         self.base_waypoints = waypoints
         self.waypoints_2D = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
         self.tree = cKDTree(self.waypoints_2D)
-        rospy.logdebug("Base waypoints callback")
+        rospy.logdebug("Waypoint Updater - Base waypoints callback")
         
     def traffic_cb(self, msg):
-        rospy.logdebug("Traffic waypoint {0}", msg)
+        rospy.logwarn("Waypoint Updater - Traffic waypoint index {}".format(msg))
         self.traffic_idx = msg
 
     def obstacle_cb(self, msg):
