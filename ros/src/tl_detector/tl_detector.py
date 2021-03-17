@@ -79,7 +79,7 @@ class TLDetector(object):
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
 
-        rospy.logwarn("TL Detector - Closest light waypoint {} and state {}".format(light_wp, state))
+        #rospy.logwarn("TL Detector - Closest light waypoint {} and state {}".format(light_wp, state))
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -90,16 +90,16 @@ class TLDetector(object):
         if self.state != state:
             self.state_count = 0
             self.state = state
-            rospy.logwarn("TL Detector - light state changes")
+            #rospy.logwarn("TL Detector - light state changes")
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
-            rospy.logwarn("TL Detector - Publish next Red traffic waypoint {}".format(light_wp))
+            #rospy.logwarn("TL Detector - Publish next Red traffic waypoint {}".format(light_wp))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-            rospy.logwarn("TL Detector - Publish lst Red traffic waypoint  {}".format(self.last_wp))
+            #rospy.logwarn("TL Detector - Publish lst Red traffic waypoint  {}".format(self.last_wp))
         self.state_count += 1
 
     
@@ -168,17 +168,17 @@ class TLDetector(object):
         if(self.pose and self.tree):
             car_waypoint_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
             
-            rospy.logwarn("TL Detector - x: {} y: {}".format(self.pose.pose.position.x, self.pose.pose.position.y))
-            rospy.logwarn("TL Detector - car_waypoint_idx {}".format(car_waypoint_idx))
+            rospy.logdebug("TL Detector - x: {} y: {}".format(self.pose.pose.position.x, self.pose.pose.position.y))
+            rospy.logdebug("TL Detector - car_waypoint_idx {}".format(car_waypoint_idx))
 
             
             # find the closest visible traffic light (if one exists)
             closest_stop_line_idx = None
             for i, light in enumerate(self.lights):
                 stop_line_pos = stop_line_positions[i]
-                rospy.logwarn("TL Detector - stop_line_pos {}".format(stop_line_pos))
+                rospy.logdebug("TL Detector - stop_line_pos {}".format(stop_line_pos))
                 stop_line_idx = self.get_closest_waypoint(stop_line_pos[0], stop_line_pos[1])
-                rospy.logwarn("TL Detector - stop_line_idx {}".format(stop_line_idx))
+                rospy.logdebug("TL Detector - stop_line_idx {}".format(stop_line_idx))
                 
                 if stop_line_idx >= car_waypoint_idx and ( closest_stop_line_idx is None or stop_line_idx < closest_stop_line_idx):
                     closest_stop_line_idx = stop_line_idx
