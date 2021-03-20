@@ -40,19 +40,24 @@ class TLDetector(object):
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
+        self.use_classifier = rospy.get_param('~use_classifier')
         self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
-
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-
+        
+        if self.use_classifier:
+            self.light_classifier = TLClassifier()
+        #self.listener = tf.TransformListener()
+        
+        #rate = rospy.Rate(3000) # sleep 100 ms
+        #rate.sleep()
+        
         rospy.spin()
             
     def pose_cb(self, msg):
@@ -143,10 +148,11 @@ class TLDetector(object):
 
         """
         if(not self.has_image):
-            self.prev_light_loc = None
+            #rospy.logwarn("TL Detector - no camera image")
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -185,8 +191,12 @@ class TLDetector(object):
                     closest_light = light
 
         if closest_light:
-            #state = self.get_light_state(closest_light)
-            return closest_stop_line_idx, light.state
+            if self.use_classifier:
+                state = self.get_light_state(closest_light)
+                rospy.logwarn("TL Detector - state classified is {} and traffic light is {}".format(state, light.state))
+            else:
+                state = light.state
+            return closest_stop_line_idx, state 
                           
         return -1, TrafficLight.UNKNOWN
 

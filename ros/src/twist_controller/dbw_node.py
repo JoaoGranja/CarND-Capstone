@@ -97,7 +97,7 @@ class DBWNode(object):
     def twist_cb(self, msg):
         self.target_linear_vel = msg.twist.linear.x
         if self.target_linear_vel < 11:
-            rospy.logwarn("Twist Controller - target_linear_vel {}".format(self.target_linear_vel))
+            rospy.logdebug("Twist Controller - target_linear_vel {}".format(self.target_linear_vel))
         self.target_angular_vel = msg.twist.angular.z
         
     def dbw_state_cb(self, msg):

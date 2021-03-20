@@ -86,11 +86,11 @@ class WaypointUpdater(object):
             self.decel_wp_list = copy.deepcopy(base_wp_list)
             self.first_decel_wp_idx = closest_idx
 
-            rospy.logwarn("Waypoint Updater - Closest wp {}, Traffic wp {}".format(closest_idx, self.traffic_idx))
+            #rospy.logwarn("Waypoint Updater - Closest wp {}, Traffic wp {}".format(closest_idx, self.traffic_idx))
             #dist_traffic_line =  self.distance(wp_list, 0, self.traffic_idx - 1 - closest_idx)
             #rospy.logwarn("Waypoint Updater - Distance from closest wp to traffic wp {}".format(dist_traffic_line))
             
-            current_wp_len = float(self.traffic_idx  - closest_idx - 3)
+            current_wp_len = float(self.traffic_idx  - closest_idx - 4)
             for idx, wp in enumerate(self.decel_wp_list):
                 # The ideia is to decelerate linearly until reach 0, 2 positions before the traffic wapoint
                 wp_vel = self.get_waypoint_velocity(wp)
@@ -99,7 +99,7 @@ class WaypointUpdater(object):
                 if idx < current_wp_len and current_wp_len != 0:
                     calc_vel = ((current_wp_len - idx) / current_wp_len )* wp_vel  
 
-                rospy.logwarn("Waypoint Updater - WP index is {} Calculated velocity is {}, waypoint velocity is {}".format(idx, calc_vel, wp_vel))
+                #rospy.logwarn("Waypoint Updater - WP index is {} Calculated velocity is {}, waypoint velocity is {}".format(idx, calc_vel, wp_vel))
                 
                 if calc_vel < 0.1:
                     calc_vel = 0
